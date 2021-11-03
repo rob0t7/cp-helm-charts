@@ -156,6 +156,9 @@ spec:
           export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_NAME}.{{ template "cp-kafka.fullname" . }}-headless.${POD_NAMESPACE}:9092{{ include "cp-kafka.configuration.advertised.listeners" . }} && \
           exec /etc/confluent/docker/run
         volumeMounts:
+          - name: security-config
+            mountPath: /etc/kafka/secrets
+            readOnly: true
         {{- if .Values.persistence.enabled }}
           {{- $disksPerBroker := .Values.persistence.disksPerBroker | int }}
           {{- range $k, $e := until $disksPerBroker }}
@@ -168,6 +171,12 @@ spec:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
       volumes:
+      - name: security-config
+        configMap:
+          name: kafka-broker-security-config
+          items:
+          - key: kafka_jaas.conf
+            path: kafka_jaas.conf
       {{- if not .Values.persistence.enabled }}
       - name: datadir-0
         emptyDir: {}

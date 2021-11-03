@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-broker-security-config
+data:
+  kafka_jaas.conf: |
+    Client {
+      org.apache.zookeeper.server.auth.DigestLoginModule required
+      username="broker"
+      password="brokersecret";
+    };

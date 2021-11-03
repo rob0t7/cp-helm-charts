@@ -39,6 +39,7 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      strategy: Recreate
       affinity:
       {{- if .Values.affinity }}
 {{ toYaml .Values.affinity | indent 8 }}
@@ -122,6 +123,12 @@ spec:
           value: "{{ .Values.autoPurgePurgeInterval}}"
         - name: ZOOKEEPER_CLIENT_PORT
           value: "{{ .Values.clientPort }}"
+        - name: ZOOKEEPER_AUTH_PROVIDER_SASL
+          value: "org.apache.zookeeper.server.auth.SASLAuthenticationProvider"
+        - name: KAFKA_OPTS
+          value: "-Djava.security.auth.login.config=/etc/kafka/secrets/zookeeper_jaas.conf -Djava.security.debug=all"
+        - name: ZOOKEEPER_ENFORCE_AUTH_ENABLED
+          value: "true"
         - name : ZOOKEEPER_SERVERS
           value: {{ template "cp-zookeeper.serverlist" . }}
         # ZOOKEEPER_SERVER_ID is required just to pass cp-zookeeper ensure script for env check,
@@ -143,11 +150,20 @@ spec:
           mountPath: /var/lib/zookeeper/data
         - name: datalogdir
           mountPath: /var/lib/zookeeper/log
+        - name: security-config
+          mountPath: /etc/kafka/secrets
+          readOnly: true
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
       volumes:
+      - name: security-config
+        configMap:
+          name: zookeeper-security-config
+          items:
+          - key: zookeeper_jaas.conf
+            path: zookeeper_jaas.conf
       {{ if not .Values.persistence.enabled }}
       - name: datadir
         emptyDir: {}
